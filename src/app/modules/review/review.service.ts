@@ -7,11 +7,11 @@ const createReviewIntoDB = async (payload: TReview) => {
 };
 
 const getAllReviewFromDB = async () => {
-  const result = await Review.find().populate("courseId");
+  const result = await Review.find();
   return result;
 };
 const getSingleReviewFromDB = async (id: string) => {
-  const result = await Review.findById(id).populate("courseId");
+  const result = await Review.findById(id);
   return result;
 };
 export const reviewServices = {
