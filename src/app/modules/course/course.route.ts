@@ -17,5 +17,7 @@ router.put(
   validateRequest(courseValidations.updateCourseValidationSchema),
   courseControllers.updateCourse
 );
+router.get("/:id/reviews", courseControllers.getSingleCourse);
+
 
 export const courseRoutes = router;

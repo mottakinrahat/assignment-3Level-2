@@ -38,13 +38,29 @@ const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
     { new: true, runValidators: true }
   );
 
+  if (details) {
+    const updateDetails = await Course.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          "details.level": details?.level,
+          "details.description": details?.description,
+        },
+      },
+      { new: true, runValidators: true }
+    );
+    return updateDetails;
+  }
+
   if (tags && tags.length > 0) {
     const deletedTags = tags.filter((el) => el.name && el.isDeleted);
     const deleteOperation = await Course.findByIdAndUpdate(
       id,
       {
-        $set: {
-          "tags.$[elem].isDeleted": true,
+        $pull: {
+          $set: {
+            "tags.$[elem].isDeleted": true,
+          },
         },
       },
       {
@@ -67,6 +83,10 @@ const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
   }
   return updateBasicCourseInfo;
 };
+
+const getCourseWithReviewIntoDB=(id:string)=>{
+
+}
 
 export const courseServices = {
   createCourseIntoDB,
