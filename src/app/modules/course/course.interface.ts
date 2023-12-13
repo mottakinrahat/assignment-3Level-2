@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Model, Types } from "mongoose";
 
 export type TDetails = {
   level: string;
@@ -22,3 +22,8 @@ export type TCourse = {
   durationInWeeks?: number;
   details: TDetails;
 };
+
+export interface TCourseModel extends Model<TCourse>{
+  isCourseExists(_id:string):Promise<TCourse|null>
+}
+

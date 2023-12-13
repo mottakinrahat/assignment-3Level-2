@@ -1,11 +1,11 @@
 /* eslint-disable prefer-const */
-import { Request } from "express";
-import { number } from "zod";
+
 import { TCourse } from "./course.interface";
 import { Course } from "./course.model";
 import { courseFunctions } from "./course.function";
 import mongoose from "mongoose";
 import { Review } from "../review/review.model";
+import { filterCourseQuery } from "./course.type";
 const createCourseIntoDB = async (payload: TCourse) => {
   const { startDate, endDate, ...restPayload } = payload;
   const durationInWeeks = courseFunctions.durationInWeeksCalculation(
@@ -27,7 +27,7 @@ const totalDataCount = async () => {
   const data = await Course.find();
   return data.length;
 };
-const getAllCoursesFromDB = async (query) => {
+const getAllCoursesFromDB = async (query: filterCourseQuery) => {
   let {
     page = 1,
     limit = 10,
@@ -88,6 +88,10 @@ const getAllCoursesFromDB = async (query) => {
   return { result, meta };
 };
 const getSingleCourseFromDB = async (id: string) => {
+  const exists = await Course.isCourseExists(id);
+  if (!exists) {
+    throw new Error("Course not found");
+  }
   const result = await Course.findById(id);
   return result;
 };
@@ -117,7 +121,7 @@ const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
 
     if (tags && tags.length > 0) {
       const existingTags = updateBasicCourseInfo?.tags.map((tag) => tag.name);
-      
+
       for (const tag of tags) {
         if (tag.name && !tag.isDeleted) {
           if (!existingTags?.includes(tag.name)) {
