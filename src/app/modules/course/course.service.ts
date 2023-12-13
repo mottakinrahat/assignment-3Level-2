@@ -5,7 +5,6 @@ import { Course } from "./course.model";
 import { courseFunctions } from "./course.function";
 import mongoose from "mongoose";
 import { Review } from "../review/review.model";
-
 const createCourseIntoDB = async (payload: TCourse) => {
   const { startDate, endDate, ...restPayload } = payload;
   const durationInWeeks = courseFunctions.durationInWeeksCalculation(
@@ -22,8 +21,39 @@ const createCourseIntoDB = async (payload: TCourse) => {
   const result = await Course.create(updatedPayload);
   return result;
 };
-const getAllCoursesFromDB = async () => {
-  const result = await Course.find().populate("categoryId");
+
+const totalDataCount = async () => {
+  const data = await Course.find();
+  return data.length;
+};
+const getAllCoursesFromDB = async (query) => {
+//   let {
+//     page = 1,
+//     limit = 10,
+//     sortBy = "title",
+
+//     sortOrder = "asc",
+//     minPrice,
+//     maxPrice,
+//     tags,
+//     startDate,
+//     endDate,
+//     language,
+//     provider,
+//     durationInWeeks,
+//     level,
+//   } = query;
+//   page = +page;
+//   limit = +limit;
+//  const skip=(page - 1) * limit;
+//  const filterData:any={}
+
+  
+
+
+
+
+  const result = await Course.find();
   return result;
 };
 const getSingleCourseFromDB = async (id: string) => {
@@ -32,59 +62,61 @@ const getSingleCourseFromDB = async (id: string) => {
 };
 
 const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
-  const { tags, details, ...courseRemainingData } = payload;
+  try {
+    const { tags, details, ...courseRemainingData } = payload;
 
-  //primitive data update
-  const updateBasicCourseInfo = await Course.findByIdAndUpdate(
-    id,
-    courseRemainingData,
-    { new: true, runValidators: true }
-  );
-
-  if (details) {
-    const updateDetails = await Course.findByIdAndUpdate(
+    const updateBasicCourseInfo = await Course.findByIdAndUpdate(
       id,
-      {
-        $set: {
-          "details.level": details?.level,
-          "details.description": details?.description,
-        },
-      },
+      courseRemainingData,
       { new: true, runValidators: true }
     );
-    return updateDetails;
-  }
 
-  if (tags && tags.length > 0) {
-    const deletedTags = tags.filter((el) => el.name && el.isDeleted);
-    const deleteOperation = await Course.findByIdAndUpdate(
-      id,
-      {
-        $pull: {
+    if (details) {
+      await Course.findByIdAndUpdate(
+        id,
+        {
           $set: {
-            "tags.$[elem].isDeleted": true,
+            "details.level": details.level,
+            "details.description": details.description,
           },
         },
-      },
-      {
-        new: true,
-        arrayFilters: [
-          { "elem.name": { $in: deletedTags.map((tag) => tag.name) } },
-        ],
-        runValidators: true,
-      }
-    );
+        { new: true, runValidators: true }
+      );
+    }
 
-    //add new data
-    const addTags: object = tags.filter((el) => el.name && !el.isDeleted);
-    const addToSetOperation = await Course.findByIdAndUpdate(
-      id,
-      { $addToSet: { tags: { $each: addTags } } },
-      { new: true, runValidators: true }
-    );
-    return addToSetOperation;
+    if (tags && tags.length > 0) {
+      const existingTags = tags.map((tag) => tag.name);
+
+      for (const tag of tags) {
+        if (tag.name && !tag.isDeleted) {
+          if (!existingTags?.includes(tag.name)) {
+            await Course.findByIdAndUpdate(
+              id,
+              { $addToSet: { tags: tag } },
+              { runValidators: true }
+            );
+          } else {
+            await Course.findOneAndUpdate(
+              { _id: id, "tags.name": tag.name },
+              { $set: { "tags.$.isDeleted": false } },
+              { runValidators: true }
+            );
+          }
+        } else if (tag.name && tag.isDeleted) {
+          await Course.findOneAndUpdate(
+            { _id: id, "tags.name": tag.name },
+            { $pull: { tags: { name: tag.name } } },
+            { runValidators: true }
+          );
+        }
+      }
+    }
+
+    const updatedCourse = await Course.findById(id);
+    return updatedCourse;
+  } catch (error) {
+    throw new Error("Error");
   }
-  return updateBasicCourseInfo;
 };
 
 const getCourseWithReviewIntoDB = async (id: string) => {
@@ -113,47 +145,35 @@ const getCourseWithReviewIntoDB = async (id: string) => {
 };
 
 const getBestCourseIntoDB = async () => {
-  try {
-    const result = await Review.aggregate([
-      {
-        $group: {
-          _id: "$courseId",
-          averageRating: { $avg: "$rating" },
-          reviewCount: { $sum: 1 },
-        },
+  const result = await Review.aggregate([
+    {
+      $group: {
+        _id: "$courseId",
+        averageRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 },
       },
-      {
-        $sort: { averageRating: -1, reviewCount: -1 },
+    },
+    {
+      $sort: { averageRating: -1, reviewCount: -1 },
+    },
+    {
+      $lookup: {
+        from: "courses",
+        localField: "_id",
+        foreignField: "_id",
+        as: "course",
       },
-      {
-        $lookup: {
-          from: "courses",
-          localField: "courseId",
-          foreignField: "_id",
-          as: "course",
-        },
-      },
-      {
-        $unwind: "$course",
-      },
-      {
-        $project: {
-          _id: 0,
-          course: 1,
-          averageRating: 1,
-          reviewCount: 1,
-        },
-      },
-    ]);
+    },
+    {
+      $unwind: "$course",
+    },
+  ]);
 
-    if (result.length > 0) {
-      const bestCourse = result[0]; 
-      return bestCourse;
-    } else {
-      return null; 
-    }
-  } catch (error) {
-    throw error;
+  if (result.length > 0) {
+    const bestCourse = result[0];
+    return bestCourse;
+  } else {
+    return "Course not found";
   }
 };
 
@@ -164,4 +184,5 @@ export const courseServices = {
   updateCourseIntoDB,
   getCourseWithReviewIntoDB,
   getBestCourseIntoDB,
+  totalDataCount,
 };

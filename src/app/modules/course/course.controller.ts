@@ -1,3 +1,4 @@
+import { TCourse } from "./course.interface";
 import httpStatus from "http-status";
 import sendResponse from "../../utils/sendResponse";
 import { courseServices } from "./course.service";
@@ -14,14 +15,21 @@ const createCourse = catchAsync(async (req, res) => {
 });
 
 const getAllCourses = catchAsync(async (req, res) => {
-  const result = await courseServices.getAllCoursesFromDB();
+  
+  const result = await courseServices.getAllCoursesFromDB(req.query);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Courses retrieved successfully",
-    data: result,
+    // meta:{
+    //   page:,
+    //   limit:,
+    //   total:
+    // },
+    data:result
   });
 });
+
 const getSingleCourse = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await courseServices.getSingleCourseFromDB(id);

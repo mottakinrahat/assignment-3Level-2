@@ -1,4 +1,4 @@
-import { path } from "path";
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-undef */
 
@@ -9,6 +9,7 @@ import { TErrorSource } from "../interface/error";
 import config from "../config";
 import handleZodError from "../config/errors/handleZodError";
 import handleValidationError from "../config/errors/handleValidationError";
+import handleCastError from "../config/errors/handleCastError";
 
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
