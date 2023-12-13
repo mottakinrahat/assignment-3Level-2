@@ -46,9 +46,9 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
     errorMessage: errorSources
       .map((eSource) => `${eSource.path} is ${eSource.message}`)
       .join("."),
-    errorDetails: err,
+    errorDetails: err ||'Something went wrong',
 
-    stack: config.NODE_ENV === "development" ? err?.stack : null,
+    stack: config.NODE_ENV === "development" && "production" ? err?.stack : null,
   });
 };
 

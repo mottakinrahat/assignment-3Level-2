@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { Request } from "express";
 import { number } from "zod";
 import { TCourse } from "./course.interface";
@@ -27,34 +28,64 @@ const totalDataCount = async () => {
   return data.length;
 };
 const getAllCoursesFromDB = async (query) => {
-//   let {
-//     page = 1,
-//     limit = 10,
-//     sortBy = "title",
+  let {
+    page = 1,
+    limit = 10,
+    sortBy = "title",
+    sortOrder = "asc",
+    minPrice,
+    maxPrice,
+    tags,
+    startDate,
+    endDate,
+    language,
+    provider,
+    durationInWeeks,
+    level,
+  } = query;
+  page = +page;
+  limit = +limit;
+  const skip = (page - 1) * limit;
+  const filterData: any = {};
 
-//     sortOrder = "asc",
-//     minPrice,
-//     maxPrice,
-//     tags,
-//     startDate,
-//     endDate,
-//     language,
-//     provider,
-//     durationInWeeks,
-//     level,
-//   } = query;
-//   page = +page;
-//   limit = +limit;
-//  const skip=(page - 1) * limit;
-//  const filterData:any={}
+  if (minPrice !== undefined && maxPrice !== undefined) {
+    filterData.price = { $gte: +minPrice, $lte: +maxPrice };
+  }
+  if (startDate !== undefined && endDate !== undefined) {
+    filterData.startDate = { $gte: startDate };
+    filterData.endDate = { $lte: endDate };
+  }
+  if (tags) {
+    filterData["tags.name"] = tags;
+  }
+  if (language) {
+    filterData.language = language;
+  }
+  if (provider) {
+    filterData.provider = provider;
+  }
+  if (durationInWeeks) {
+    filterData.durationInWeeks = durationInWeeks;
+  }
+  if (level) {
+    filterData["details.level"] = level;
+  }
+  const sortFormula: any = {};
 
-  
+  sortFormula[sortBy] = sortOrder === "desc" ? -1 : 1;
 
+  const result = await Course.find(filterData)
+    .sort(sortFormula)
+    .skip(skip)
+    .limit(limit);
 
-
-
-  const result = await Course.find();
-  return result;
+  const totalCount = await Course.countDocuments(filterData);
+  const meta = {
+    page,
+    limit,
+    total: totalCount,
+  };
+  return { result, meta };
 };
 const getSingleCourseFromDB = async (id: string) => {
   const result = await Course.findById(id);
@@ -85,8 +116,8 @@ const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
     }
 
     if (tags && tags.length > 0) {
-      const existingTags = tags.map((tag) => tag.name);
-
+      const existingTags = updateBasicCourseInfo?.tags.map((tag) => tag.name);
+      
       for (const tag of tags) {
         if (tag.name && !tag.isDeleted) {
           if (!existingTags?.includes(tag.name)) {
