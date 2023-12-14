@@ -1,4 +1,4 @@
-const durationInWeeksCalculation=(startDate,endDate)=>{
+const durationInWeeksCalculation=(startDate:string,endDate:string)=>{
     const startDateObject = new Date(startDate);
     const endDateObject = new Date(endDate);
     const durationInWeeks = Math.ceil(
