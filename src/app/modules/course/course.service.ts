@@ -28,6 +28,7 @@ const totalDataCount = async () => {
   return data.length;
 };
 const getAllCoursesFromDB = async (query: filterCourseQuery) => {
+  //destructuring the query fields
   let {
     page = 1,
     limit = 10,
@@ -48,6 +49,7 @@ const getAllCoursesFromDB = async (query: filterCourseQuery) => {
   const skip = (page - 1) * limit;
   const filterData: any = {};
 
+  //filter using price
   if (minPrice !== undefined && maxPrice !== undefined) {
     filterData.price = { $gte: +minPrice, $lte: +maxPrice };
   }
@@ -95,8 +97,9 @@ const getSingleCourseFromDB = async (id: string) => {
   const result = await Course.findById(id);
   return result;
 };
-
+//for update course
 const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
+  //check if the id is exist or not
   const exists = await Course.isCourseExists(id);
   if (!exists) {
     throw new Error("Course not found");
