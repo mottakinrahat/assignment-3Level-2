@@ -97,6 +97,10 @@ const getSingleCourseFromDB = async (id: string) => {
 };
 
 const updateCourseIntoDB = async (id: string, payload: Partial<TCourse>) => {
+  const exists = await Course.isCourseExists(id);
+  if (!exists) {
+    throw new Error("Course not found");
+  }
   try {
     const { tags, details, ...courseRemainingData } = payload;
 

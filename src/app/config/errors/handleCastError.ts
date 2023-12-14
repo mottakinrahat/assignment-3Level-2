@@ -6,8 +6,8 @@ const handleCastError = (
 ): TGenericErrorResponse => {
   const errorSources: TErrorSource = [
     {
-      path: err.path ||'',
-      message: err.message,
+      path: err.path || "",
+      message: `${err.value._id} is not a valid ID!`,
     },
   ];
   const statusCode = 400;
